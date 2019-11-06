@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:note_app/SharedPreferenceUser.dart';
 import 'package:note_app/Note.dart';
+import 'package:intl/intl.dart';
 
 void main() => runApp(MyApp());
 
@@ -75,8 +76,8 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     return PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) => Page2(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          var curve = Curves.slowMiddle;
-          var tween = Tween(begin: Offset(0.0, -1.0), end: Offset.zero)
+          var curve = Curves.linearToEaseOut;
+          var tween = Tween(begin: Offset(0.0, 1.0), end: Offset.zero)
               .chain(CurveTween(curve: curve));
           return SlideTransition(
             position: animation.drive(tween),
@@ -93,11 +94,13 @@ class Page2 extends StatefulWidget {
 
 class _Page2State extends State<Page2> with TickerProviderStateMixin {
   final SharedPref sharedPref = new SharedPref();
+  final GlobalKey<FormState> key = new GlobalKey();
   final GlobalKey<AnimatedListState> listKey = GlobalKey<AnimatedListState>();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.blueGrey,
       appBar: AppBar(
         title: Text(
           "Page 2",
@@ -108,12 +111,10 @@ class _Page2State extends State<Page2> with TickerProviderStateMixin {
           future: sharedPref.read(),
           builder: (BuildContext context, AsyncSnapshot<List<Note>> snapshot) {
             if (snapshot.hasData) {
-              return AnimatedList(
-                key: listKey,
-                initialItemCount: snapshot.data.length,
-                itemBuilder: (context, index, animation) {
-                  return buildWidget(snapshot.data[index], animation, context);
-                },
+              print("snapshot length is : ${snapshot.data.length}");
+              return ListView(
+                children: snapshot.data.map((item)=>buildWidget(item)).toList()
+
               );
             }
             return Center(
@@ -129,94 +130,82 @@ class _Page2State extends State<Page2> with TickerProviderStateMixin {
     );
   }
 
-  Widget buildWidget(Note e, Animation animation, BuildContext context) {
+  Widget buildWidget(Note e) {
+    final date = new DateFormat('h:m aa | MMM dd');
     return Dismissible(
       key: Key(e.id.toString()),
       onDismissed: (value) {
         removeLastItem(e);
       },
-      child: SizeTransition(
-        sizeFactor: animation,
-        child: Padding(
-          padding: const EdgeInsets.only(top: 12.0, right: 10, left: 10),
-          child: Container(
-            decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [
-                  Colors.blueAccent,
-                  Colors.lightBlueAccent,
-                ]),
-                shape: BoxShape.rectangle,
-                borderRadius: BorderRadius.circular(5)),
-            child: ListTile(
-              title: Text(
-                e.title,
+      child: Padding(
+        padding: const EdgeInsets.only(top: 12.0, right: 10, left: 10),
+        child: Container(
+          decoration: BoxDecoration(
+              gradient: LinearGradient(colors: [
+                Colors.blueAccent,
+                Colors.lightBlueAccent,
+              ]),
+              shape: BoxShape.rectangle,
+              borderRadius: BorderRadius.circular(5)),
+          child: ListTile(
+            title: Text(
+              e.title,
+              style: TextStyle(
+                  fontFamily: 'Ubuntu',
+                  fontSize: 20,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w400),
+            ),
+            subtitle: Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: Text(date.format(new DateTime.fromMillisecondsSinceEpoch(e.id)),
                 style: TextStyle(
                     fontFamily: 'Ubuntu',
-                    fontSize: 20,
+                    fontSize: 17,
                     color: Colors.white,
                     fontWeight: FontWeight.w400),
               ),
-              subtitle: Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Text(
-                  new DateTime.fromMillisecondsSinceEpoch(e.id * 1000)
-                      .toLocal()
-                      .toString(),
-                  style: TextStyle(
-                      fontFamily: 'Ubuntu',
-                      fontSize: 17,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w400),
-                ),
-              ),
-              trailing: AnimatedContainer(
-                  key: Key(e.id.toString()),
-                  duration: Duration(milliseconds: 800),
-                  height: e.isDone ? 50 : 47,
-                  width: e.isDone ? 50 : 75,
-                  curve: Curves.ease,
-                  decoration: BoxDecoration(
-                      color: e.isDone ? Colors.lightGreenAccent : Colors.white,
-                      borderRadius: BorderRadius.circular(50)),
-                  child: IconButton(
-                    icon: e.isDone
-                        ? Icon(
-                            Icons.done,
-                            color: e.isDone ? Colors.green : Colors.grey,
-                            size: 30,
-                          )
-                        : Text(
-                            "Done",
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(fontSize: 17),
-                          ),
-                    onPressed: () async {
-                      final isSuccess = await sharedPref.done(e.id);
-                      if (isSuccess) {
-                        setState(() {});
-                      }
-                    },
-                  )),
             ),
+            trailing: AnimatedContainer(
+                key: Key(e.id.toString()),
+                duration: Duration(milliseconds: 800),
+                height: 50,
+                width: e.isDone ? 50 : 75,
+                curve: Curves.ease,
+                decoration: BoxDecoration(
+                    color: e.isDone ? Colors.lightGreenAccent : Colors.white,
+                    borderRadius: BorderRadius.circular(50)),
+                child: IconButton(
+                  icon: e.isDone
+                      ? Icon(
+                          Icons.done,
+                          color: e.isDone ? Colors.green : Colors.grey,
+                          size: 30,
+                        )
+                      : Text(
+                          "Mark\nDone",
+                          textAlign: TextAlign.center,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 16, height: 1),
+                        ),
+                  onPressed: () async {
+                    final isSuccess = await sharedPref.done(e.id);
+                    if (isSuccess) {
+                      setState(() {});
+                    }
+                  },
+                )),
           ),
         ),
       ),
     );
   }
 
-  void removeLastItem(Note e){
-    setState(() async {
-      await sharedPref.remove(e.id);
-      listKey.currentState.removeItem(
-        0,
-            (BuildContext context, Animation animation) =>
-            buildWidget(e, animation, context),
-        duration: const Duration(milliseconds: 250),
-      );
+  void removeLastItem(Note e) async{
+    await sharedPref.remove(e.id);
+    setState(() {
+
     });
-
-
-
   }
 
   void _showBottomSheet(BuildContext context) {
@@ -236,6 +225,7 @@ class _Page2State extends State<Page2> with TickerProviderStateMixin {
                 child: Wrap(
                   children: <Widget>[
                     TextFormField(
+                      key: key,
                       decoration: InputDecoration(
                           hintText: 'Note',
                           labelText: 'Note',
@@ -261,16 +251,17 @@ class _Page2State extends State<Page2> with TickerProviderStateMixin {
                       child: Center(
                         child: RaisedButton(
                           color: Colors.red,
-                          onPressed: () async {
-                            final id = DateTime.now().millisecondsSinceEpoch;
-                            if (title.isNotEmpty) {
+                          onPressed: () async{
+
+                            if (key.currentState.validate())  {
+                              final id = DateTime.now().millisecondsSinceEpoch;
                               Note note = new Note(
                                   title: title, id: id, isDone: isDone);
-                              await sharedPref.saveNote(note).then((_){
-                                listKey.currentState.insertItem(0);
-                                Navigator.pop(context);
+                              await sharedPref.saveNote(note);
+                              setState(()  {
+                                  Navigator.pop(context);
 
-                              });
+                                });
                             }
                           },
                           child: Text(
@@ -279,7 +270,7 @@ class _Page2State extends State<Page2> with TickerProviderStateMixin {
                           ),
                         ),
                       ),
-                    )
+                    ),
                   ],
                 ),
               ),
