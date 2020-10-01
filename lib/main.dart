@@ -227,8 +227,8 @@ class _Page2State extends State<Page2> with TickerProviderStateMixin {
                     TextFormField(
                       key: key,
                       decoration: InputDecoration(
-                          hintText: 'Note',
-                          labelText: 'Note',
+                          hintText: 'Note-1',
+                          labelText: 'Note-1',
                           border: OutlineInputBorder(
                               borderSide: BorderSide(
                                 color: Colors.blueGrey,
@@ -241,7 +241,7 @@ class _Page2State extends State<Page2> with TickerProviderStateMixin {
                       },
                       validator: (data) {
                         if (data.isEmpty) {
-                          return "Enter your note";
+                          return "Enter your note-1";
                         }
                         return null;
                       },
@@ -265,7 +265,7 @@ class _Page2State extends State<Page2> with TickerProviderStateMixin {
                             }
                           },
                           child: Text(
-                            "Add Note",
+                            "Add Note-1",
                             style: TextStyle(color: Colors.white),
                           ),
                         ),
